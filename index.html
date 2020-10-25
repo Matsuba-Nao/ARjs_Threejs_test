@@ -28,9 +28,7 @@
       });
 
       arToolkitSource.init(() => {
-        setTimeout(() => {
           onResize();
-        }, 2000);
       });
 
       addEventListener('resize', () => {
@@ -48,24 +46,27 @@
       const arToolkitContext = new THREEx.ArToolkitContext({
         cameraParametersUrl: 'data/camera_para.dat',
         detectionMode: 'mono'
+
       });
 
       arToolkitContext.init(() => {
         camera.projectionMatrix.copy(arToolkitContext.getProjectionMatrix());
       });
 
+      const marker = new THREE.Group();
       const arMarkerControls = new THREEx.ArMarkerControls(arToolkitContext, camera, {
         type: 'pattern',
-        patternUrl: 'data/patt.hiro',
+        patternUrl: 'data/pattern-human.patt',
         changeMatrixMode: 'cameraTransformMatrix'
       });
+      scene.add(marker);
 
       const mesh = new THREE.Mesh(
         new THREE.CubeGeometry(1, 1, 1),
         new THREE.MeshNormalMaterial(),
       );
       mesh.position.y = 1.0;
-      scene.add(mesh);
+      marker.add(mesh);
 
       const clock = new THREE.Clock();
       requestAnimationFrame(function animate(){
