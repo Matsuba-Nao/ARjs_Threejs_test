@@ -47,7 +47,13 @@
 
       const arToolkitContext = new THREEx.ArToolkitContext({
         cameraParametersUrl: 'data/camera_para.dat',
-        detectionMode: 'mono'
+        detectionMode: 'color_and_matrix',
+        matrixCodeType: '4x4_BCH_13_9_3',
+        patternRatio: 0.80, // マーカー作成時のpatternRatioに合わせる
+        maxDetectionRate: 10,
+        canvasWidth: videoWidth,
+        canvasHeight: videoHeight,
+
       });
 
       arToolkitContext.init(() => {
@@ -56,8 +62,9 @@
 
       const arMarkerControls = new THREEx.ArMarkerControls(arToolkitContext, camera, {
         type: 'pattern',
-        patternUrl: 'data/pattern-marker.pat',
-        changeMatrixMode: 'cameraTransformMatrix'
+        patternUrl: 'data/pattern-marker.patt',
+        changeMatrixMode: 'modeViewMatrix',
+        minConfidence: 0.50
       });
 
       const mesh = new THREE.Mesh(
