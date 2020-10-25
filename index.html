@@ -7,78 +7,112 @@
   </head>
   <body>
     <script>
-      const renderer = new THREE.WebGLRenderer({
-        antialias: true,
-        alpha: true
-      });
-      renderer.setClearColor(new THREE.Color(), 0);
-      renderer.setSize(640, 480);
-      renderer.domElement.style.position = 'absolute';
-      renderer.domElement.style.top = '0px';
-      renderer.domElement.style.left = '0px';
-      document.body.appendChild(renderer.domElement);
-
-      const scene = new THREE.Scene();
-      scene.visible = false;
-      const camera = new THREE.Camera();
-      scene.add(camera);
-
-      const arToolkitSource = new THREEx.ArToolkitSource({
-        sourceType: 'webcam'
-      });
-
-      arToolkitSource.init(() => {
-        setTimeout(() => {
-          onResize();
-        }, 2000);
-      });
-
-      addEventListener('resize', () => {
-        onResize();
-      });
-
-      function onResize() {
-        arToolkitSource.onResizeElement();
-        arToolkitSource.copyElementSizeTo(renderer.domElement);
-        if (arToolkitContext.arController !== null) {
-          arToolkitSource.copyElementSizeTo(arToolkitContext.arController.canvas);
+        //===================================================================
+        // three.js の各種設定
+        //===================================================================
+        var scene = new THREE.Scene();                        // シーンの作成
+        var renderer = new THREE.WebGLRenderer({              // レンダラの作成
+          antialias: true,                                    // アンチエイリアス有効
+          alpha: true,                                        // canvasに透明度バッファを持たせる
+        });
+        renderer.setClearColor(new THREE.Color("black"), 0);  // レンダラの背景色
+        renderer.setSize(640, 480);                           // レンダラのサイズ
+        renderer.domElement.style.position = "absolute";      // レンダラの位置は絶対値
+        renderer.domElement.style.top = "0px";                // レンダラの上端
+        renderer.domElement.style.left = "0px";               // レンダラの左端
+        document.body.appendChild(renderer.domElement);       // レンダラの DOM を body に入れる
+        var camera = new THREE.Camera();                      // カメラの作成
+        scene.add(camera);                                    // カメラをシーンに追加
+        var light = new THREE.DirectionalLight(0xffffff);     // 平行光源（白）を作成
+        light.position.set(0, 0, 2);                          // カメラ方向から照らす
+        scene.add(light);                                     // シーンに光源を追加
+        
+        //===================================================================
+        // arToolkitSource（マーカトラッキングするメディアソース）
+        //===================================================================
+        var source = new THREEx.ArToolkitSource({             // arToolkitSourceの作成
+          sourceType: "webcam",                               // Webカメラを使う（スマホもこれでOK）
+        });
+        source.init(function onReady() {                      // ソースを初期化し、準備ができたら
+          onResize();                                         // リサイズ処理
+        });
+        
+        //===================================================================
+        // arToolkitContext（カメラパラメータ、マーカ検出設定）
+        //===================================================================
+        var context = new THREEx.ArToolkitContext({           // arToolkitContextの作成
+          debug: false,                                       // デバッグ用キャンバス表示（デフォルトfalse）
+          cameraParametersUrl: "camera_para.dat",             // カメラパラメータファイル
+          detectionMode: "mono",                              // 検出モード（color/color_and_matrix/mono/mono_and_matrix）
+          imageSmoothingEnabled: true,                        // 画像をスムージングするか（デフォルトfalse）
+          maxDetectionRate: 60,                               // マーカの検出レート（デフォルト60）
+          canvasWidth: source.parameters.sourceWidth,         // マーカ検出用画像の幅（デフォルト640）
+          canvasHeight: source.parameters.sourceHeight,       // マーカ検出用画像の高さ（デフォルト480）
+        });
+        context.init(function onCompleted(){                  // コンテクスト初期化が完了したら
+          camera.projectionMatrix.copy(context.getProjectionMatrix());   // 射影行列をコピー
+        });
+        
+        //===================================================================
+        // リサイズ処理
+        //===================================================================
+        window.addEventListener("resize", function() {        // ウィンドウがリサイズされたら
+          onResize();                                         // リサイズ処理
+        });
+        // リサイズ関数
+        function onResize(){
+          source.onResizeElement();                           // トラッキングソースをリサイズ
+          source.copyElementSizeTo(renderer.domElement);      // レンダラも同じサイズに
+          if(context.arController !== null){                  // arControllerがnullでなければ
+            source.copyElementSizeTo(context.arController.canvas);  // それも同じサイズに
+          } 
         }
-      };
-
-      const arToolkitContext = new THREEx.ArToolkitContext({
-        cameraParametersUrl: 'data/camera_para.dat',
-        detectionMode: 'mono'
-      });
-
-      arToolkitContext.init(() => {
-        camera.projectionMatrix.copy(arToolkitContext.getProjectionMatrix());
-      });
-
-      const arMarkerControls = new THREEx.ArMarkerControls(arToolkitContext, camera, {
-        type: 'pattern',
-        patternUrl: 'data/patt.hiro',
-        changeMatrixMode: 'cameraTransformMatrix'
-      });
-
-      const mesh = new THREE.Mesh(
-        new THREE.CubeGeometry(1, 1, 1),
-        new THREE.MeshNormalMaterial(),
-      );
-      mesh.position.y = 1.0;
-      scene.add(mesh);
-
-      const clock = new THREE.Clock();
-      requestAnimationFrame(function animate(){
-        requestAnimationFrame(animate);
-        if (arToolkitSource.ready) {
-          arToolkitContext.update(arToolkitSource.domElement);
-          scene.visible = camera.visible;
+        
+        //===================================================================
+        // ArMarkerControls（マーカと、マーカ検出時の表示オブジェクト）
+        //===================================================================
+        //-------------------------------
+        // その１（hiroマーカ＋立方体）
+        //-------------------------------
+        // マーカ
+        // ネットでhiroマーカの画像を得て、以下の AR.js のマーカトレーニングサイトで patt を作成
+        // https://jeromeetienne.github.io/AR.js/three.js/examples/marker-training/examples/generator.html
+        var marker1 = new THREE.Group();                      // マーカをグループとして作成
+        var controls = new THREEx.ArMarkerControls(context, marker1, {    // マーカを登録
+          type: "pattern",                                    // マーカのタイプ
+          patternUrl: "pattern-miku.patt",                            // マーカファイル
+        });
+        scene.add(marker1);                                   // マーカをシーンに追加
+        // モデル（メッシュ）
+        var geo = new THREE.CubeGeometry(1, 1, 1);            // cube ジオメトリ（サイズは 1x1x1）
+        var mat = new THREE.MeshNormalMaterial({              // マテリアルの作成
+          transparent: true,                                  // 透過
+          opacity: 0.5,                                       // 不透明度
+          side: THREE.DoubleSide,                             // 内側も描く
+        });
+        var mesh1 = new THREE.Mesh(geo, mat);                 // メッシュを生成
+        mesh1.name = "cube";                                  // メッシュの名前（後でピッキングで使う）
+        mesh1.position.set(0, 0.5, 0);                        // 初期位置
+        marker1.add(mesh1);                                   // メッシュをマーカに追加
+        // マーカ隠蔽（cloaking）
+        var videoTex = new THREE.VideoTexture(source.domElement);  // 映像をテクスチャとして取得
+        videoTex.minFilter = THREE.NearestFilter;             // 映像テクスチャのフィルタ処理
+        var cloak = new THREEx.ArMarkerCloak(videoTex);       // マーカ隠蔽(cloak)オブジェクト
+        cloak.object3d.material.uniforms.opacity.value = 1.0; // cloakの不透明度
+        marker1.add(cloak.object3d);                          // cloakをマーカに追加
+        
+        //===================================================================
+        // レンダリング・ループ
+        //===================================================================
+        function renderScene() {                              // レンダリング関数
+          requestAnimationFrame(renderScene);                 // ループを要求
+          if(source.ready === false)    { return; }             // メディアソースの準備ができていなければ抜ける
+          context.update(source.domElement);                  // ARToolkitのコンテキストを更新
+          TWEEN.update();                                     // Tweenアニメーションを更新
+          renderer.render(scene, camera);                     // レンダリング実施
         }
-        const delta = clock.getDelta();
-        mesh.rotation.x += delta * 1.0;
-        mesh.rotation.y += delta * 1.5; 
-        renderer.render(scene, camera);
-      });
-    </script>
-  </body>
+        renderScene();                                        // 最初に1回だけレンダリングをトリガ
+        
+        </script>
+    </body>
 </html>
