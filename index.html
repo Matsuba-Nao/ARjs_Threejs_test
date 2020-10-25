@@ -3,7 +3,7 @@
   <head>
     <title>Marker Based AR with AR.js and Three.js</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/three.js/build/ar.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/3.1.0/three.js/build/ar.js"></script>
   </head>
   <body>
     <script>
@@ -47,17 +47,17 @@
 
       const arToolkitContext = new THREEx.ArToolkitContext({
         cameraParametersUrl: 'data/camera_para.dat',
-        detectionMode: 'mono',
+        detectionMode: 'mono'
       });
 
-      arToolkitContext.init(function onCompleted(){
+      arToolkitContext.init(() => {
         camera.projectionMatrix.copy(arToolkitContext.getProjectionMatrix());
       });
 
       const arMarkerControls = new THREEx.ArMarkerControls(arToolkitContext, camera, {
         type: 'pattern',
-        patternUrl: 'data/pattern-marker.pat',
-        changeMatrixMode: 'cameraTransformMatrix',
+        patternUrl: 'data/patt.hiro',
+        changeMatrixMode: 'cameraTransformMatrix'
       });
 
       const mesh = new THREE.Mesh(
