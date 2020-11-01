@@ -144,7 +144,9 @@
         }
         _resize ()
         {
+          setTimeout(() => {
             this._threeMng.resize();
+          }, 2000);
         }
     }
 
@@ -172,19 +174,20 @@
             //
             // THREE.js (Renderer, Scene, Camera) の初期化
             //        
-            var renderer = new THREE.WebGLRenderer({
-              antialias: true, alpha: true
+            const renderer = new THREE.WebGLRenderer({
+              antialias: true,
+              alpha: true
             });
+            renderer.setClearColor(new THREE.Color(), 0);
             renderer.setSize(w, h);
             renderer.domElement.style.position = 'absolute';
             renderer.domElement.style.top = '0px';
             renderer.domElement.style.left = '0px';
             document.body.appendChild(renderer.domElement);
 
-            var scene = new THREE.Scene();
+            const scene = new THREE.Scene();
             scene.visible = false;
-
-            var camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 100);
+            const camera = new THREE.Camera();
             scene.add(camera);
 
             //ARjs初期化
@@ -204,7 +207,7 @@
             this._renderer = renderer;
             this._scene    = scene;
             this._camera   = camera;
-            this._color = "#000";
+            this._color = "#FFFFFF";
             this._arToolKitSource = arToolkitSource;
             this._arToolkitContext = arToolkitContext;
             this._arMarkerControls = arMarkerControls;
@@ -239,9 +242,9 @@
         // 再生位置アップデート
         update (position)
         {
-            if (arToolkitSource.ready) {
-              arToolkitContext.update(arToolkitSource.domElement);
-              scene.visible = camera.visible;
+            if (this._arToolkitSource.ready) {
+              this._arToolkitContext.update(this._arToolkitSource.domElement);
+              this._scene.visible = this._camera.visible;
             }
             this._position = position;
             if (! this._lyrics) return;
@@ -270,24 +273,22 @@
             // ボックスの回転
             this._box.rotation.set(position / 1234, position / 2345, position / 3456);
 
+            if (this._arToolkitContext.arController !== null) {
+              this._arToolkitSource.copyElementSizeTo(this._arToolkitContext.arController.canvas);
+            }
             this._renderer.render(this._scene, this._camera);
         }
         // リサイズ
         resize ()
         {
-            arToolkitSource.onResizeElement();
-            arToolkitSource.copyElementSizeTo(renderer.domElement);
-            if (arToolkitContext.arController !== null) {
-              arToolkitSource.copyElementSizeTo(arToolkitContext.arController.canvas);
+            this._arToolkitSource.onResizeElement();
+            this._arToolkitSource.copyElementSizeTo(this._renderer.domElement);
+            if (this._arToolkitContext.arController !== null) {
+              this._arToolkitSource.copyElementSizeTo(this._arToolkitContext.arController.canvas);
             }
 
-            var stw = this._stw = document.documentElement.clientWidth;
-            var sth = this._sth = document.documentElement.clientHeight;
-            
-            this._camera.aspect = stw / sth;
-            this._camera.updateProjectionMatrix();
-            
-            this._renderer.setSize(stw, sth);
+
+
         }
         
         // 外枠（ワイヤーフレーム）の描画
