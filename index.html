@@ -27,8 +27,6 @@
             const { Player } = TextAliveApp;
             var player = new Player({
                 app: {
-                    appAuthor: "daniwell",
-                    appName: "Char Cube",
                     parameters: [
                         {
                             title: "テキスト色",
@@ -134,20 +132,6 @@
 
             this._threeMng.update(position);
         }
-        // パラメタアップデート
-        _onAppParameterUpdate (name, value)
-        {
-            var  col = value.r * 256 * 256 + value.g * 256 + value.b;
-            switch (name)
-            {
-            case "Color":
-                this._threeMng.changeColor(col);
-                break;
-            case "BackgroundColor":
-                this._threeMng.changeBackgroundColor(col);
-                break;
-            }
-        }
 
         _update ()
         {
@@ -245,11 +229,7 @@
             
             this._drawFrame();
         }
-        // 背景色の変更
-        changeBackgroundColor (color)
-        {
-            this._scene.background.set(color);
-        }
+
         // 歌詞の更新
         setLyrics (lyrics)
         {
